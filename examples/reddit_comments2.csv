@@ -1,0 +1,45 @@
+,content
+0,Could you enable [logging](https://asyncpraw.readthedocs.io/en/stable/getting_started/logging.html#logging-in-async-praw) and rerun your program?
+1,Another thing you can try is to lazy load the submission by passing `lazy=True` in the `submission` call.
+2,"Asyncpraw isn't actually any faster than regular praw. Everything is still constrained by reddit's one request a second rate limit. Asyncpraw is mainly useful for situations where you're doing something else in addition to using the reddit api, and you can take advantage by doing that faster, or separately.
+
+If you want to post your old regular praw code and some samples of the data, I would be happy to take a look and figure out if there's a way you could be doing it more efficiently."
+3,"Thanks for getting back to me! It looks like adding `lazy=true` has gotten me past the first hurdle, but I now get an error on `comments = await submission.comments()` . I enabled the debugging and I get this:
+
+    Fetching: GET https://oauth.reddit.com/comments/3g1jfi/
+    Data: None
+    Params: {'limit': '2048', 'sort': 'confidence', 'raw_json': 1}
+
+And the errors that I get are:
+
+    raise asyncio.TimeoutError from None
+    
+    asyncio.exceptions.TimeoutError
+    
+    During handling of the above exception, another exception occurred:
+    
+    raise RequestException(exc, args, kwargs) asyncprawcore.exceptions.RequestException: error with request Unclosed client session client_session: <aiohttp.client.ClientSession object at 0x0000017C4E5EE220>"
+4,Is it alright if I dm you?
+5,That's what I was suspecting. Try increasing the timeout to 30 seconds. You can do that by passing `timeout=30` in `asyncrpraw.Reddit`
+6,Sure
+7,"By running in VSCode I could remove `nest_asyncio; nest_asyncio.apply()`, which alongside the addition of `timeout = 30`, worked!  
+
+
+I'll now try to get the Comment Extraction and Parsing part going.  
+
+
+I wonder if you could help me with just one last pointer. My program has a long list of post urls/ids/ and it uses these to scrape through the comments, one post at a time. Sometimes there are 20 comments, sometimes there are 20,000. I was wondering what would be the most efficient way to go through at least a large percentage of these comments would be. Currently it wil stick on one for 10 minutes,  then do the rest in another 10.
+
+My old program using PRAW would go through one by one, adding these comments to a large database. This was pretty slow, and I thought that by threading these tasks or doing them asynchronously that it would speed up the process.
+
+Is using AsyncPRAW a good way to go about doing this, or is there a better way that you can think of?
+
+Thanks again for all the help!"
+8,"yes you should do the requests async to issue multiple requests concurrently. To do this with asyncio you will need to use asyncio.gather(): https://docs.python.org/3/library/asyncio-task.html#running-tasks-concurrently
+
+Gather() will let you call the async functions in parallel. I would however be careful to not try to batch too many requests at once since you may run into rate limit problems. You could basically run a loop and batch gathers of a fixed size (try 10-20 at first) until you've scraped all of your data."
+9,"Regardless of the way you do it, you'll still be restricted by the rate limits. 
+
+Also, FYI the usage for `comments()`, `list()`, and `replace_more` is going to change in the near future for Async PRAW."
+10,"I'll give it a shot, thanks for the tip!"
+11,"Ahh ok, thanks for all the help! I'll keep my eye on the documentation for any changes in the future, thanks for all the work you've done for it, its incredible stuff!"
